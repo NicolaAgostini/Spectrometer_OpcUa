@@ -1,0 +1,24 @@
+{
+  "name": "spectrometer_opcua",
+  "version": "1.0.0",
+  "description": "A simple tool to retrieve spectrum analysis from spectrometer and publish relevant data via OPCUA",
+  "main": "server.js",
+   "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NicolaAgostini/SpectrometerX200_OpcUa.git"
+  },
+  "author": "",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/NicolaAgostini/SpectrometerX200_OpcUa/issues"
+  },
+  "homepage": "https://github.com/NicolaAgostini/SpectrometerX200_OpcUa#readme"
+}

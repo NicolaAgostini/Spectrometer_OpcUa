@@ -1,0 +1,227 @@
+
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #2f4f4f; /* verde legno */
+  color: #333;
+  
+background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+background-size: cover;
+}
+
+h1 {
+  font-weight: 400;
+  font-size: 2rem;
+  color: #ffffff;
+  margin: 20px 0;
+}
+
+.main-wrapper {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+.container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.col-lg-4,
+.col-lg-8 {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Input fields */
+input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="text"]:focus {
+  border-color: #388e3c;
+  box-shadow: 0 0 4px rgba(56, 142, 60, 0.4);
+  outline: none;
+}
+
+/* Labels */
+#inputs div {
+  font-weight: 500;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* Lista tagli */
+ol#inputCutList {
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+ol#inputCutList li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+ol#inputCutList li input[type="button"] {  /* bottons + and - */
+  background-color: #8AA8A1;
+  color: #fff;
+  padding: 10px 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  min-width: 50px;
+  min-height: 50px;
+  text-align: center;
+}
+
+ol#inputCutList li input[type="button"]:hover {
+  background-color: #ddd;
+}
+
+/* Pulsanti Material style */
+.input-button,
+.input-button-2 {
+  background-color: #8AA8A1;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  margin-right: 8px;
+}
+
+.input-button:hover,
+.input-button-2:hover {
+  background-color: #CBCBD4;
+}
+
+.input-button:active,
+.input-button-2:active {
+  transform: scale(0.98);
+}
+
+.input-button[value="Reset"],
+.input-button-2[value="Clear"] {
+  background-color: #d84315;
+}
+
+.input-button[value="Reset"]:hover,
+.input-button-2[value="Clear"]:hover {
+  background-color: #bf360c;
+}
+
+/* Textarea Material style */
+textarea {
+  width: 100%;
+  min-height: 400px;
+  padding: 12px;
+  font-size: 14px;
+  font-family: monospace;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  transition: border-color 0.2s ease;
+}
+
+textarea:focus {
+  border-color: #388e3c;
+  outline: none;
+  box-shadow: 0 0 4px rgba(56, 142, 60, 0.3);
+}
+
+/* Footer text */
+#results form + div,
+#results > div {
+  font-size: 13px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.grid-container-element { 
+    display: flex; 
+    justify-content: space-between;
+
+    width: 100%; 
+} 
+
+.grid-child-element1 { 
+
+  gap: 8px;
+  flex-grow: 1.1;
+}
+.grid-child-element2 { 
+
+  gap: 8px;
+  flex-grow: 0.90;
+}
+
+.logo{
+    display: flex;
+    justify-content: center
+}
+
+.h1Text{
+    color: white;
+    font-size: 2.5em;
+    font-weight: 400;
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.title{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.inputMinusPlus{
+    width:30px;
+    height:30px;
+    margin-left: 5px;
+    border-radius:15px;
+    border: 20px solid black;
+    background-color:black;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .row {
+    flex-direction: column;
+  }
+
+  textarea {
+    min-height: 300px;
+  }
+}
+
