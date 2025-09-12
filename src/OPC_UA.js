@@ -11,56 +11,23 @@ const {
 } = require("node-opcua");
 
 
+const getLocalIPAddress = require('./utils/utils.js');
 
 
 const OPCUAServerWrapper = require('./OPCUA_server.js');
-const {handleCut} = require('./algorithm.js');
-
-const {getInputList} = require('./utils/getInputList.cjs');
-
-const {createLC, createPC, createBoxArray} = require("./utils/OPCUA_Arrays.cjs");
 
 
 
-//ELECTRON APP (if want to use NODE START comment this code)
 
-/* const { app, BrowserWindow } = require('electron')
 
-const createWindow = () => {
-  const win = new BrowserWindow({
-    width: 1100,
-    height: 1200,
-    minWidth: 400,
-    minHeight: 500,
-  })
 
-  win.loadFile('index.html')
-}
-
-app.whenReady().then(() => {
-  createWindow()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    }
-  })
-})
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-}) */
-
-//end ELECTRON APP code
 
 
 const serverOptions = {
     port: 4334,
     resourcePath: "/2rz/Resources",   // opc.tcp://<hostname>:4334/2rz/Resources
     buildInfo: {
-        productName: "2RZ Spectrometer OPCUA server",
+        productName: "Spectrometer OPCUA server",
         buildNumber: "1",
         buildDate: new Date()
     }
@@ -68,7 +35,10 @@ const serverOptions = {
 
 const opcuaServer = new OPCUAServerWrapper(serverOptions);
 
-(async () => {
+
+
+async function startOPCUA_Server(opcuaServer) //start opcua server
+{
     try {
         await opcuaServer.initialize();
         //create variables
@@ -86,16 +56,21 @@ const opcuaServer = new OPCUAServerWrapper(serverOptions);
         console.error("Error starting OPC UA Server:", err);
         process.exit(1);
     }
-})();
+}
 
 
 /**
  * Create a client to connect to the OPC UA server.
  * 
  */
-(async () => {
+
+async function waitForTriggerTestScan()
+{
     const client = OPCUAClient.create({});
-    await client.connect("opc.tcp://NB-NICOLA-N.2RZ.LOCAL:4840/2rz/Resources");
+    const port = 4840;
+    const ip = getLocalIPAddress();
+
+    await client.connect("opc.tcp://"+ip+":"+port+"/2rz/Resources");
 
     const session = await client.createSession();
 
@@ -109,12 +84,12 @@ const opcuaServer = new OPCUAServerWrapper(serverOptions);
     });
 
     const bitStartMonitor = {
-        nodeId: "ns=1;s=BitStart",
+        nodeId: "ns=1;s=bitStart",
         attributeId: AttributeIds.Value
     };
 
     const parameters = {
-        samplingInterval: 100,  // ogni 100ms
+        samplingInterval: 100,  // every 100ms
         discardOldest: true,
         queueSize: 10
     };
@@ -124,180 +99,151 @@ const opcuaServer = new OPCUAServerWrapper(serverOptions);
         parameters,
         TimestampsToReturn.Both
     );
-    let listOfCuts = [];
-    monitoredBitStart.on("changed", (dataValue) => {
+
+    monitoredBitStart.on("changed", async (dataValue) => {
         console.log("BitStart value has changed to:", dataValue.value.value);
         //insert function here
         if(dataValue.value.value === true) {
-            //handle error in optimization
+
+            //handle error in analysis
             var error = false;
 
 
-            console.log("Starting optimization process...");
-            let cutList = getInputList(opcuaServer);
-            //console.log("cutList: ", cutList);
-            let LenghToCut = opcuaServer.LunghezzaPezzo;
-
-            listOfCuts = handleCut(cutList,LenghToCut,false, opcuaServer.MaxLenScarto, opcuaServer.SpessoreLama, opcuaServer.ScartoIntestatura); //call Optimization algorithm
-            console.log("list of cuts", listOfCuts);
-            if(listOfCuts==0)
+            console.log("Calling Api...");
+            try
             {
-                error = true;
-            }
+                var data = await makeTestScan_OPCUA(opcuaServer.ip, opcuaServer.name);
 
-            var nodesToWriteOutError = [
-                {
-                nodeId: "ns=1;s=OutError",
-                attributeId: AttributeIds.Value,
-                value: /*new DataValue(*/{
-                    value: {/* Variant */
-                    dataType: DataType.Boolean,
-                    value: error
-                    }
-                }
-                }
-            ];
-            session.write(nodesToWriteOutError, function (err, statusCode, diagnosticInfo) {
-                if (!err) 
-                {
-
-                }
-
-            });
-
-            //extract array OutLc, OutPc, OutB
-            let OutLc = createLC(listOfCuts);
-            let OutPc = createPC(listOfCuts);
-            let OutB = createBoxArray(opcuaServer.PcsLC, opcuaServer.PcsB, OutLc, opcuaServer.SpessoreLama);
-
-/*             console.log("OutLc: ", OutLc);
-            console.log("OutPc: ", OutPc);  
-            console.log("OutB: ", OutB); */
-            
-            //scrittura dei risultati in variabili opcua
-            //OutLC
-            var nodesToWriteLC = [{
-                nodeId: "ns=1;s=OutLc",
+                var nodesToWriteMaterialCode = [{
+                nodeId: "ns=1;s=outMaterial",
                 attributeId: AttributeIds.Value,
                 indexRange: null,
                 value: { 
                     value: { 
-                         dataType: DataType.Double,
-                        arrayType: VariantArrayType.Array,
-                         value: OutLc
+                            dataType: DataType.String,
+                            value: data.data.testData.firstGradeMatch
                     }
                         }
                 }];
-            session.write(nodesToWriteLC, function(err,statusCode,diagnosticInfo) {
+                await session.write(nodesToWriteMaterialCode, function(err,statusCode,diagnosticInfo) {
                 if (!err) {
                     /* console.log(" nodesToWriteLC ok" );
                     console.log(diagnosticInfo);
                     console.log(statusCode); */
                 }
-                
-            });  
 
-            //OutPc
-            var nodesToWritePc = [{
-                nodeId: "ns=1;s=OutPc",
+                });  
+
+                var nodesToWriteOutResult = [{
+                nodeId: "ns=1;s=outResult",
                 attributeId: AttributeIds.Value,
                 indexRange: null,
                 value: { 
                     value: { 
-                         dataType: DataType.Double,
-                        arrayType: VariantArrayType.Array,
-                         value: OutPc
+                            dataType: DataType.Boolean,
+                            value: true
                     }
                         }
                 }];
-            session.write(nodesToWritePc, function(err,statusCode,diagnosticInfo) {
+                await session.write(nodesToWriteOutResult, function(err,statusCode,diagnosticInfo) {
                 if (!err) {
-                    /* console.log(" nodesToWritePc ok" );
+                    /* console.log(" nodesToWriteLC ok" );
                     console.log(diagnosticInfo);
                     console.log(statusCode); */
                 }
-                
-            });  
 
+                });  
 
-            //OutB
-            var nodesToWriteB = [{
-                nodeId: "ns=1;s=OutB",
+                var nodesToWriteOutError = [{
+                nodeId: "ns=1;s=outError",
                 attributeId: AttributeIds.Value,
                 indexRange: null,
                 value: { 
                     value: { 
-                         dataType: DataType.Double,
-                        arrayType: VariantArrayType.Array,
-                         value: OutB
+                            dataType: DataType.Boolean,
+                            value: false
                     }
                         }
                 }];
-            session.write(nodesToWriteB, function(err,statusCode,diagnosticInfo) {
+                await session.write(nodesToWriteOutError, function(err,statusCode,diagnosticInfo) {
                 if (!err) {
-                    /* console.log(" nodesToWriteB ok" );
+                    /* console.log(" nodesToWriteLC ok" );
                     console.log(diagnosticInfo);
                     console.log(statusCode); */
                 }
-                
-            });  
 
-            // set OutEnd
-            var nodesToWriteOutEnd = [
-                {
-                nodeId: "ns=1;s=OutEnd",
+                });                  
+
+
+
+
+            }
+            catch{
+
+                var nodesToWriteOutError = [{
+                nodeId: "ns=1;s=outError",
                 attributeId: AttributeIds.Value,
-                value: /*new DataValue(*/{
-                    value: {/* Variant */
-                    dataType: DataType.Boolean,
-                    value: true
+                indexRange: null,
+                value: { 
+                    value: { 
+                            dataType: DataType.Boolean,
+                            value: true
                     }
-                }
-                }
-            ];
-
-            session.write(nodesToWriteOutEnd, function (err, statusCode, diagnosticInfo) {
-                if (!err) 
-                {
-                    /* console.log(" nodesToWriteOutEnd ok" );
+                        }
+                }];
+                await session.write(nodesToWriteOutError, function(err,statusCode,diagnosticInfo) {
+                if (!err) {
+                    console.log("outError");
                     console.log(diagnosticInfo);
-                    console.log(statusCode); */
+                    console.log(statusCode); 
                 }
 
-            });
-
-
-            //reset del bit di start BitStart a false
-            // set BitStart
-            var nodesToWriteBitStart = [
-                {
-                nodeId: "ns=1;s=BitStart",
-                attributeId: AttributeIds.Value,
-                value: /*new DataValue(*/{
-                    value: {/* Variant */
-                    dataType: DataType.Boolean,
-                    value: false
-                    }
-                }
-                }
-            ];
-
-            session.write(nodesToWriteBitStart, function (err, statusCode,diagnosticInfo) {
-                if (!err) 
-                {
-                    /* console.log(" nodesToWriteBitStart ok" );
-                    console.log(diagnosticInfo);
-                    console.log(statusCode); */
-                }
-
-            });
-
+                }); 
+            }
+            
 
         }
     });
-   
-})();
+}
 
+async function makeTestScan_OPCUA(ip, name)
+{
+    
+    if (name = "") {
+        throw new Error("Name not specified");
+    }
+    if (ip == "") {
+        throw new Error("Ip not specified");
+    }
 
+    try {
+    //const response = await fetch("http://"+ip+":8080/api/v2/config"); //get example
 
+    const apiUrl = "http://"+ip+":8080/api/v2/test/final?mode="+name; // API for scanning
 
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({}) // empty json
+    });
+
+    if (!response.ok) {
+        return res.status(response.status).json({ error: 'Error command, check API parameters' });
+    }
+
+    const data = await response.json();
+
+    res.json({
+        data
+    });
+    return res;
+
+    } catch (err) {
+    res.status(500).json({ error: 'Error in API request' });
+    return res;
+    }
+}
+
+module.exports = { startOPCUA_Server, waitForTriggerTestScan };

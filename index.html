@@ -7,7 +7,7 @@
 	<title></title>
 	<meta name="description" content="" />
 	<meta name="keywords" content="" />
-	<meta name="author" content="2RZ">
+	<meta name="author" content="">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 
 	<!-- Bootstrap v5.0.2 (https://getbootstrap.com/) | Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) -->
@@ -26,10 +26,10 @@
 	<div class="main-wrapper">
 		<div class="title">
 			<div class="logo">
-    			<img src="./Images/logo2rz.png" alt="Logo"  style="height: 50px;" />
+    			<img src="./Images/spectrum_logo.jpg" alt="Logo"  style="height: 50px;" />
   			</div> 
 			<div class="h1Text">
-				<h1>2RZ Spectrometer OPCUA</h1>
+				<h1>Spectrometer OPCUA</h1>
 			</div>
 		</div>
 		<div id="container" class="container">
@@ -50,12 +50,13 @@
 
 					
 					<div id="input-bottom" style="text-align:center;">
-						<input type="button" class="input-button" value="Analyze" onclick="makeTestScan()" />
+						<input type="button" id="analyzeBtn" class="input-button" value="Analyze" />
 					</div>
 					</form>
 					
 				</div>
-				<div id="material_code" class="col-lg-8">
+				<div class="col-lg-8">
+					<textarea style="min-width:200px;  min-height: 50px" id="material_code" placeholder="Material code: ..." wrap="off"></textarea>
 				</div>
 				<div id="test_result" class="col-lg-8">
 					<form>
@@ -63,14 +64,12 @@
 						<input type="reset" class="input-button-2" value="Clear" />
 						<input type="button" class="input-button-2" value="Copy" id="copy-to-clip" />
 					</form>
-					Material loss per cut is not counted.
 				</div>
 			</div>
 		</div>
 	</div>
 	
 	<script type="module" src="src/script.js"></script>
-
 
 </body>
 

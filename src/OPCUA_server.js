@@ -1,5 +1,5 @@
 
-/** @module 2rz opcua server for optimizination 1-D */
+/** @module 2rz opcua server for OPCUA spectrometer command */
 
 const { OPCUAServer, Variant, DataType, VariantArrayType, StatusCodes } = require("node-opcua");
 
@@ -14,29 +14,14 @@ class OPCUAServerWrapper {
         this.server = new OPCUAServer(options);
 
         //varibles from plc to pc
-        this.LunghezzaPezzo = 1500; // Length of the piece
-        this.ScartoIntestatura = 30; // Waste of the head    
-        this.SpessoreLama = 10; // Thickness of the blade
-        this.MaxLenScarto = 100; // Maximum length for waste cut
-        this.PcsTD = new Float64Array(300).fill(0); // Pieces to do 
-        this.PcsLC = new Float64Array(300).fill(0); // Measures for the pieces to do
-        this.PcsB = new Float64Array(300).fill(0); // Box of discharge
-        this.BitStart = false; // Bit for starting the optimization calculations
+        this.ip = ""; // ip of the spectrometer
+        this.name = ""; // name of the material (es: Alloy,...)  
+        this.bitStart = false; // start spectrometer analysis
 
         //varibles from pc to plc
-        this.OutLc = new Float64Array(300).fill(0); // array of lengths to be cut
-        this.OutPc = new Float64Array(300).fill(0); // array of pieces to be cut
-        this.OutB = new Float64Array(300).fill(0); // array of boxes where to put the pieces
-        this.OutEnd = false; // Flag for completion of the optimization process
-        this.OutError = false; // Flag for error in optimization process
-
-        //inizializzazioni per test
-        this.PcsTD[0] = 5;
-        this.PcsTD[1] = 2;
-        this.PcsLC[0]=90;
-        this.PcsLC[1]=40;
-        this.PcsB[0]=1; // box for 90
-        this.PcsB[1]=3; // box for 40
+        this.outMaterial = "0";
+        this.outResult = false;
+        this.outError = false;
 
 
     }
@@ -54,8 +39,7 @@ class OPCUAServerWrapper {
      */
     /**
      * Asynchronously creates and adds OPC UA variables to the server's address space.
-     * It defines several variables related to cutting optimization, such as piece length, waste, blade thickness, maximum waste length, 
-     * pieces to do, measures for pieces to do, discharge box, and a bit for starting calculations.
+     * It defines several variables related to spectrometer
      * 
      * @async
      * @returns {Promise<void>} Resolves when all variables have been created.
@@ -71,255 +55,111 @@ class OPCUAServerWrapper {
 
         const self = this; // Preserve the context of 'this' for use in event handlers
 
-        // Variable 1: piece length
+        // Variable 1: ip
         namespace.addVariable({
             componentOf: PLCToDevice,
-            browseName: "LunghezzaPezzo",
-            nodeId: "ns=1;s=LunghezzaPezzo",
+            browseName: "ipAddr",
+            nodeId: "ns=1;s=ipAddr",
             minimumSamplingInterval: 1000,
-            dataType: "Double",
+            dataType: "String",
             value: {
-                            get: () => new Variant({ dataType: DataType.Double, value: self.LunghezzaPezzo }),
+                            get: () => new Variant({ dataType: DataType.String, value: self.ip }),
             set: (variant) => {
-                self.LunghezzaPezzo = variant.value;
+                self.ip = variant.value;
                 return StatusCodes.Good; 
             }
         }
         });
 
-        console.log("Created variable LunghezzaPezzo");
-        // Variable 2: first scrap
+        console.log("Created variable ip");
+        // Variable 2: name
         namespace.addVariable({
             componentOf: PLCToDevice,
-            browseName: "ScartoIntestatura",
-            nodeId: "ns=1;s=ScartoIntestatura",
+            browseName: "materialName",
+            nodeId: "ns=1;s=materialName",
             minimumSamplingInterval: 1000,
-            dataType: "Double",
+            dataType: "String",
             value: {
-                            get: () => new Variant({ dataType: DataType.Double, value: self.ScartoIntestatura }),
+                            get: () => new Variant({ dataType: DataType.String, value: self.name }),
             set: (variant) => {
-                self.ScartoIntestatura = variant.value;
+                self.name = variant.value;
                 return StatusCodes.Good; 
             }
         }
         });
 
-        // Variable 3: blade thickness
+        // Variable 3: bit start
         namespace.addVariable({
             componentOf: PLCToDevice,
-            browseName: "SpessoreLama",
-            nodeId: "ns=1;s=SpessoreLama",
-            minimumSamplingInterval: 1000,
-            dataType: "Double",
-            value: {
-                            get: () => new Variant({ dataType: DataType.Double, value: self.SpessoreLama }),
-            set: (variant) => {
-                self.SpessoreLama = variant.value;
-                return StatusCodes.Good; 
-            }
-        }
-        });
-
-        // Variable 4: Max length for waste cut
-        namespace.addVariable({
-            componentOf: PLCToDevice,
-            browseName: "MaxLenScarto",
-            nodeId: "ns=1;s=MaxLenScarto",
-            minimumSamplingInterval: 1000,
-            dataType: "Double",
-            value: {
-                            get: () => new Variant({ dataType: DataType.Double, value: self.MaxLenScarto }),
-            set: (variant) => {
-                self.MaxLenScarto = variant.value;
-                return StatusCodes.Good; 
-            }
-        }
-        });
-
-        // Variable 5: Pieces to be cut
-        //let PcsTD = new Array(300).fill(0);
-        namespace.addVariable({
-            componentOf: PLCToDevice,
-            browseName: "PcsTD",
-            nodeId: "ns=1;s=PcsTD",
-            minimumSamplingInterval: 1000,
-            dataType: "Double",
-            value: {
-            get: function () {
-                return new Variant({
-                    dataType: DataType.Double,
-                    arrayType: VariantArrayType.Array,
-                    value: self.PcsTD
-                });
-            },
-            set: function (variant) {
-                self.PcsTD = new Float64Array(variant.value);
-                return StatusCodes.Good; 
-            }
-            }
-        });
-
-        // Variable 6: Measures for pieces to be cut
-        //let PcsLC = new Array(300).fill(0);
-        namespace.addVariable({
-            componentOf: PLCToDevice,
-            browseName: "PcsLC",
-            nodeId: "ns=1;s=PcsLC",
-            minimumSamplingInterval: 1000,
-            dataType: "Double",
-            value: {
-            get: function () {
-                return new Variant({
-                    dataType: DataType.Double,
-                    arrayType: VariantArrayType.Array,
-                    value: self.PcsLC
-                });
-            },
-            set: function (variant) {
-                self.PcsLC = new Float64Array(variant.value);
-                return StatusCodes.Good; 
-            }
-            }
-        });
-
-        // Variable 7: Box for output pieces
-        namespace.addVariable({
-            componentOf: PLCToDevice,
-            browseName: "PcsB",
-            nodeId: "ns=1;s=PcsB",
-            minimumSamplingInterval: 1000,
-            dataType: "Double",
-            value: {
-            get: function () {
-                return new Variant({
-                    dataType: DataType.Double,
-                    arrayType: VariantArrayType.Array,
-                    value: self.PcsB
-                });
-            },
-            set: function (variant) {
-                self.PcsB = new Float64Array(variant.value);
-                return StatusCodes.Good; 
-            }
-            }
-        });
-
-        // Variable 8: Bit to execute optimization process
-        namespace.addVariable({
-            componentOf: PLCToDevice,
-            browseName: "BitStart",
-            nodeId: "ns=1;s=BitStart",
+            browseName: "bitStart",
+            nodeId: "ns=1;s=bitStart",
             minimumSamplingInterval: 1000,
             dataType: "Boolean",
             value: {
-                            get: () => new Variant({ dataType: DataType.Boolean, value: self.BitStart }),
+                            get: () => new Variant({ dataType: DataType.Boolean, value: self.bitStart }),
             set: (variant) => {
-                self.BitStart = variant.value;
+                self.bitStart = variant.value;
                 return StatusCodes.Good; 
             }
         }
         });
 
+        //OUTPUT
         //variables TOPLC
         const deviceToPLC = namespace.addObject({
             organizedBy: addressSpace.rootFolder.objects,
             browseName: "ToPLC"
         });
 
-        // Variable 9: Output of lengths to be cut
+        // Variable 4: material code
         namespace.addVariable({
             componentOf: deviceToPLC,
-            browseName: "OutLc",
-            nodeId: "ns=1;s=OutLc",
+            browseName: "outMaterialCode",
+            nodeId: "ns=1;s=outMaterialCode",
             minimumSamplingInterval: 1000,
-            dataType: "Double",
+            dataType: "String",
             value: {
             get: function () {
                 return new Variant({
-                    dataType: DataType.Double,
-                    arrayType: VariantArrayType.Array,
-                    value: self.OutLc
+                    dataType: DataType.String,
+                    value: self.outMaterial
                 });
             },
             set: function (variant) {
-                self.OutLc = new Float64Array(variant.value);
-                return StatusCodes.Good; 
-            }
-            }
-        });
-
-        // Variable 10: Output of pieces to be cut for each length
-        namespace.addVariable({
-            componentOf: deviceToPLC,
-            browseName: "OutPc",
-            nodeId: "ns=1;s=OutPc",
-            minimumSamplingInterval: 1000,
-            dataType: "Double",
-            value: {
-            get: function () {
-                return new Variant({
-                    dataType: DataType.Double,
-                    arrayType: VariantArrayType.Array,
-                    value: self.OutPc
-                });
-            },
-            set: function (variant) {
-                self.OutPc = new Float64Array(variant.value);
+                self.outMaterial = variant.value;
                 return StatusCodes.Good; 
             }
             }
         });
 
 
-        // Variable 11: Boxes where to put pieces for each lengths
+        // Variable 5: Bit for request done
         namespace.addVariable({
             componentOf: deviceToPLC,
-            browseName: "OutB",
-            nodeId: "ns=1;s=OutB",
-            minimumSamplingInterval: 1000,
-            dataType: "Double",
-            value: {
-            get: function () {
-                return new Variant({
-                    dataType: DataType.Double,
-                    arrayType: VariantArrayType.Array,
-                    value: self.OutB
-                });
-            },
-            set: function (variant) {
-                self.OutB = new Float64Array(variant.value);
-                return StatusCodes.Good; 
-            }
-            }
-        });
-
-        // Variable 12: Bit for optimization process done
-        namespace.addVariable({
-            componentOf: deviceToPLC,
-            browseName: "OutEnd",
+            browseName: "outEnd",
             nodeId: "ns=1;s=OutEnd",
             minimumSamplingInterval: 1000,
             dataType: "Boolean",
             value: {
-                            get: () => new Variant({ dataType: DataType.Boolean, value: self.OutEnd }),
+                            get: () => new Variant({ dataType: DataType.Boolean, value: self.outResult }),
             set: (variant) => {
-                self.OutEnd = variant.value;
+                self.outResult = variant.value;
                 return StatusCodes.Good; 
             }
         }
         });
 
-        // Variable 13: Error bit
+        // Variable 6: bit error
         namespace.addVariable({
             componentOf: deviceToPLC,
-            browseName: "OutError",
-            nodeId: "ns=1;s=OutError",
+            browseName: "outError",
+            nodeId: "ns=1;s=outError",
             minimumSamplingInterval: 1000,
             dataType: "Boolean",
             value: {
-                            get: () => new Variant({ dataType: DataType.Boolean, value: self.OutError }),
+                            get: () => new Variant({ dataType: DataType.Boolean, value: self.outError }),
             set: (variant) => {
-                self.OutError = variant.value;
+                self.outError = variant.value;
                 return StatusCodes.Good; 
             }
         }

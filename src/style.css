@@ -20,12 +20,14 @@ h1 {
 }
 
 .main-wrapper {
-  max-width: 1200px;
+  flex-wrap: wrap;
+  max-width: 100%;
   margin: auto;
   padding: 20px;
 }
 
 .container {
+  max-width: 100%;
   background-color: #ffffff;
   border-radius: 12px;
   padding: 24px;

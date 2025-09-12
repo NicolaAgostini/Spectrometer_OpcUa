@@ -2,23 +2,39 @@
   "name": "spectrometer_opcua",
   "version": "1.0.0",
   "description": "A simple tool to retrieve spectrum analysis from spectrometer and publish relevant data via OPCUA",
-  "main": "server.js",
-   "scripts": {
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "src/server.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "test": "node src/test/testServerApi.js",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "electron-squirrel-startup": "^1.0.1",
     "express": "^4.18.2",
-    "node-fetch": "^2.6.9"
+    "node-fetch": "^2.6.9",
+    "node-opcua": "^2.156.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NicolaAgostini/SpectrometerX200_OpcUa.git"
+    "url": "git+https://github.com/NicolaAgostini/Spectrometer_OpcUa.git"
   },
   "author": "",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/NicolaAgostini/SpectrometerX200_OpcUa/issues"
+    "url": "https://github.com/NicolaAgostini/Spectrometer_OpcUa/issues"
   },
-  "homepage": "https://github.com/NicolaAgostini/SpectrometerX200_OpcUa#readme"
+  "homepage": "https://github.com/NicolaAgostini/Spectrometer_OpcUa#readme",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.9.0",
+    "@electron-forge/maker-deb": "^7.9.0",
+    "@electron-forge/maker-rpm": "^7.9.0",
+    "@electron-forge/maker-squirrel": "^7.9.0",
+    "@electron-forge/maker-zip": "^7.9.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.9.0",
+    "@electron-forge/plugin-fuses": "^7.9.0",
+    "@electron/fuses": "^1.8.0",
+    "electron": "^38.1.0"
+  }
 }
