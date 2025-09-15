@@ -3,6 +3,8 @@
 
 const { OPCUAServer, Variant, DataType, VariantArrayType, StatusCodes } = require("node-opcua");
 
+const getLocalIPAddress = require('./utils/utils.js');
+
 class OPCUAServerWrapper {
 
 
@@ -137,7 +139,7 @@ class OPCUAServerWrapper {
         namespace.addVariable({
             componentOf: deviceToPLC,
             browseName: "outEnd",
-            nodeId: "ns=1;s=OutEnd",
+            nodeId: "ns=1;s=outEnd",
             minimumSamplingInterval: 1000,
             dataType: "Boolean",
             value: {
@@ -171,6 +173,7 @@ class OPCUAServerWrapper {
      * Start the server.
      */
     async start() {
+        
         await this.server.start();
         console.log("OPC UA Server is now listening on", this.server.endpoints[0].endpointDescriptions()[0].endpointUrl);
     }

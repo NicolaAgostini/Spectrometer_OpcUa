@@ -22,10 +22,10 @@ const OPCUAServerWrapper = require('./OPCUA_server.js');
 
 
 
-
+/* 
 const serverOptions = {
     port: 4334,
-    resourcePath: "/2rz/Resources",   // opc.tcp://<hostname>:4334/2rz/Resources
+    resourcePath: "/Spectrometer/Resources",   // opc.tcp://<hostname>:4334/Spectrometer/Resources
     buildInfo: {
         productName: "Spectrometer OPCUA server",
         buildNumber: "1",
@@ -33,7 +33,7 @@ const serverOptions = {
     }
 };
 
-const opcuaServer = new OPCUAServerWrapper(serverOptions);
+const opcuaServer = new OPCUAServerWrapper(serverOptions); */
 
 
 
@@ -64,13 +64,14 @@ async function startOPCUA_Server(opcuaServer) //start opcua server
  * 
  */
 
-async function waitForTriggerTestScan()
+async function waitForTriggerTestScan(opcuaServer)
 {
+    console.log("waitForTriggerTestScan");
     const client = OPCUAClient.create({});
-    const port = 4840;
+    const port = 4334;
     const ip = getLocalIPAddress();
 
-    await client.connect("opc.tcp://"+ip+":"+port+"/2rz/Resources");
+    await client.connect("opc.tcp://"+ip+":"+port+"/Spectrometer/Resources");
 
     const session = await client.createSession();
 
@@ -102,6 +103,12 @@ async function waitForTriggerTestScan()
 
     monitoredBitStart.on("changed", async (dataValue) => {
         console.log("BitStart value has changed to:", dataValue.value.value);
+
+       /*  console.log("Server opcua IP ", opcuaServer.ip);
+        console.log("Server opcua NAME", opcuaServer.name);
+        console.log("Server opcua BIT START", opcuaServer.bitStart); */
+
+
         //insert function here
         if(dataValue.value.value === true) {
 
@@ -113,15 +120,16 @@ async function waitForTriggerTestScan()
             try
             {
                 var data = await makeTestScan_OPCUA(opcuaServer.ip, opcuaServer.name);
+                console.log("waitForTriggerTestScan - data material ", data.testData.firstGradeMatch);
 
                 var nodesToWriteMaterialCode = [{
-                nodeId: "ns=1;s=outMaterial",
+                nodeId: "ns=1;s=outMaterialCode",
                 attributeId: AttributeIds.Value,
                 indexRange: null,
                 value: { 
                     value: { 
                             dataType: DataType.String,
-                            value: data.data.testData.firstGradeMatch
+                            value: data.testData.firstGradeMatch
                     }
                         }
                 }];
@@ -135,7 +143,7 @@ async function waitForTriggerTestScan()
                 });  
 
                 var nodesToWriteOutResult = [{
-                nodeId: "ns=1;s=outResult",
+                nodeId: "ns=1;s=outEnd",
                 attributeId: AttributeIds.Value,
                 indexRange: null,
                 value: { 
@@ -149,9 +157,9 @@ async function waitForTriggerTestScan()
                 if (!err) {
                     /* console.log(" nodesToWriteLC ok" );
                     console.log(diagnosticInfo);
-                    console.log(statusCode); */
+                    console.log(statusCode);  */
                 }
-
+                
                 });  
 
                 var nodesToWriteOutError = [{
@@ -194,6 +202,7 @@ async function waitForTriggerTestScan()
                 await session.write(nodesToWriteOutError, function(err,statusCode,diagnosticInfo) {
                 if (!err) {
                     console.log("outError");
+                    console.log(err);
                     console.log(diagnosticInfo);
                     console.log(statusCode); 
                 }
@@ -208,8 +217,9 @@ async function waitForTriggerTestScan()
 
 async function makeTestScan_OPCUA(ip, name)
 {
+
     
-    if (name = "") {
+    if (name == "") {
         throw new Error("Name not specified");
     }
     if (ip == "") {
@@ -221,6 +231,8 @@ async function makeTestScan_OPCUA(ip, name)
 
     const apiUrl = "http://"+ip+":8080/api/v2/test/final?mode="+name; // API for scanning
 
+    console.log("makeTestScan_OPCUA - Api url ", apiUrl);
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -230,19 +242,18 @@ async function makeTestScan_OPCUA(ip, name)
     });
 
     if (!response.ok) {
-        return res.status(response.status).json({ error: 'Error command, check API parameters' });
+        console.log("makeTestScan_OPCUA - OPCUA, response not ok ", response.status);
+        return json({ error: 'Error command, check API parameters' });
     }
 
     const data = await response.json();
+    console.log("makeTestScan_OPCUA - data ", data.testData.firstGradeMatch);
 
-    res.json({
-        data
-    });
-    return res;
+    return data;
 
     } catch (err) {
-    res.status(500).json({ error: 'Error in API request' });
-    return res;
+    var error = json({ error: 'Error in API request' });
+    return error;
     }
 }
 

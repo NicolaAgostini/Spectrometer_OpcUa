@@ -120,7 +120,8 @@ appExpress.listen(PORT, () => {
 
     const serverOptions = {
     port: 4334,
-    resourcePath: "/2rz/Resources",   // opc.tcp://<hostname>:4334/2rz/Resources
+    resourcePath: "/Spectrometer/Resources",   // opc.tcp://<hostname>:4334/2rz/Resources
+    alternateHostname: getLocalIPAddress(), // ip of the server
     buildInfo: {
         productName: "2RZ Spectrometer OPCUA server",
         buildNumber: "1",
@@ -132,7 +133,7 @@ appExpress.listen(PORT, () => {
 
     await startOPCUA_Server(opcuaServer);
 
-    waitForTriggerTestScan();
+    waitForTriggerTestScan(opcuaServer);
 
 })();
 
